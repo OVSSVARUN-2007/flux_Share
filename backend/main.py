@@ -1,0 +1,43 @@
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+
+app = FastAPI(title="Flux Share API")
+
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+
+# In production (when dist exists), mount the static files
+if os.path.exists(frontend_dist):
+    # Vite outputs static files to /assets
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    # Specifically handle Vite's public assets if any (vite.svg, etc)
+    @app.get("/{catchall:path}")
+    def serve_frontend(catchall: str):
+        # Prevent path traversal
+        if ".." in catchall:
+            return {"error": "Invalid path"}
+            
+        file_path = os.path.join(frontend_dist, catchall)
+        
+        # If the requested file exists (like favicon, robots.txt), serve it
+        if catchall and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # Otherwise serve the SPA index.html
+        index_path = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+            
+        return {"error": "Index file not found in frontend build."}
+else:
+    @app.get("/{catchall:path}")
+    def missing_frontend(catchall: str):
+        return {"error": "Frontend build not found. Please run 'npm run build' in the frontend/ folder."}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
