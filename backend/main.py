@@ -8,15 +8,15 @@ from database import engine
 import models
 from routers import auth
 
-# Initialize the SQLite database
-models.Base.metadata.create_all(bind=engine)
+# Initialize the SQLite database (Disabled on Serverless to prevent Vercel boot timeouts)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Flux Share API")
 
-# Setup CORS to allow React frontend to call the API during dev
+# Setup CORS to allow React frontend to call the API perfectly in Production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
