@@ -1,7 +1,15 @@
 {
-  "functions": {
-    "api/**/*.py": {
-      "includeFiles": "backend/**"
-    }
-  }
+    "experimentalServices": {
+        "frontend": {
+            "entrypoint": "frontend",
+            "routePrefix": "/"
+        },
+        "backend": {
+            "entrypoint": "backend",
+            "routePrefix": "/api"
+        }
+    },
+    "rewrites": [
+        { "source": "/api/(.*)", "destination": "/api/index" }
+    ]
 }
