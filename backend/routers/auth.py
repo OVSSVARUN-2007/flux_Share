@@ -6,6 +6,9 @@ from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 
 import database, models, schemas, auth_utils
+import urllib.request
+import json
+import urllib.error
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -63,10 +66,16 @@ def login(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 @router.post("/google", response_model=schemas.Token)
 def google_auth(auth: schemas.GoogleAuth, db: Session = Depends(database.get_db)):
     try:
-        idinfo = id_token.verify_oauth2_token(auth.token, google_requests.Request(), GOOGLE_CLIENT_ID)
+        req = urllib.request.Request("https://www.googleapis.com/oauth2/v3/userinfo")
+        req.add_header("Authorization", f"Bearer {auth.token}")
+        try:
+            with urllib.request.urlopen(req) as response:
+                user_info = json.loads(response.read().decode())
+        except urllib.error.URLError:
+            raise ValueError("Invalid Google access token")
         
-        email = idinfo.get('email')
-        google_id = idinfo.get('sub')
+        email = user_info.get('email')
+        google_id = user_info.get('sub')
         
         if not email:
             raise HTTPException(status_code=400, detail="Invalid Google token: no email provided")
