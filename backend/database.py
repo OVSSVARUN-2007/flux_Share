@@ -13,6 +13,11 @@ SQLALCHEMY_DATABASE_URL = os.getenv(
     "postgresql://postgres:password@localhost/flux_share"
 )
 
+# IMPORTANT BUGFIX: Cloud databases (Railway/Heroku) often use old prefix `postgres://`
+# Modern Python SQL engines explicitly require `postgresql://`, leading to invisible 500 crashes
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Connect args specific to SQLite (check_same_thread) are safely removed for Postgres
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
