@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowUpRight, ArrowDownLeft, X, File, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, X, File, ShieldCheck, Zap, User, LogOut } from 'lucide-react';
 import { usePeerTransfer } from './usePeerTransfer';
+import { useAuth } from './AuthContext';
+import AuthModal from './AuthModal';
 import './index.css';
 
 export default function App() {
   const [view, setView] = useState('home'); // home, send, receive
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user, loading, logout } = useAuth();
   const {
     peerId, status, progress, errorMsg, fileMeta, downloadUrl,
     initSender, initReceiver, reset
@@ -15,6 +19,23 @@ export default function App() {
   const fileInputRef = useRef(null);
   const [receiverId, setReceiverId] = useState('');
   const [expiryTimer, setExpiryTimer] = useState(7 * 60);
+
+  // Automatically switch to receive mode if a URL parameter exists, but strictly enforce Auth
+  useEffect(() => {
+    // Only act after auth resolves
+    if (loading) return; 
+
+    const params = new URLSearchParams(window.location.search);
+    const recId = params.get('receive');
+    if (recId) {
+       if (user) {
+         setView('receive');
+         setReceiverId(recId);
+       } else {
+         setShowAuthModal(true);
+       }
+    }
+  }, [loading, user]);
 
   useEffect(() => {
     let interval;
@@ -26,7 +47,6 @@ export default function App() {
             clearInterval(interval);
             reset();
             setView('home');
-            alert('Sharing session expired after 7 minutes.');
             return 0;
           }
           return prev - 1;
@@ -78,9 +98,26 @@ export default function App() {
         <div className="bubble b3"></div>
       </div>
       
-      <header className="header">
+      <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-          <h2 className="logo-text">Flux <span className="highlight">Share</span></h2>
+          <h2 className="logo-text" onClick={handleHome} style={{ cursor: 'pointer' }}>Flux <span className="highlight">Share</span></h2>
+        </motion.div>
+        
+        <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
+           {user ? (
+             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <span style={{ color: '#fff', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                   <User size={18}/> {user.email.split('@')[0]}
+                </span>
+                <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '5px' }} onClick={logout}>
+                   <LogOut size={16}/> Logout
+                </button>
+             </div>
+           ) : (
+             <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }} onClick={() => setShowAuthModal(true)}>
+               Login / Sign Up
+             </button>
+           )}
         </motion.div>
       </header>
 
@@ -118,10 +155,10 @@ export default function App() {
               </div>
 
               <div className="buttons-group">
-                <button className="btn btn-primary" onClick={() => setView('send')}>
+                <button className="btn btn-primary" onClick={() => user ? setView('send') : setShowAuthModal(true)}>
                   <ArrowUpRight size={20} /> Send File
                 </button>
-                <button className="btn btn-secondary" onClick={() => setView('receive')}>
+                <button className="btn btn-secondary" onClick={() => user ? setView('receive') : setShowAuthModal(true)}>
                   <ArrowDownLeft size={20} /> Receive File
                 </button>
               </div>
@@ -174,8 +211,21 @@ export default function App() {
                   <div className="share-details">
                     <p className="instruction">Scan the QR code or share your unique ID:</p>
                     <div className="peer-id-box">{peerId}</div>
-                    <div className="qr-container">
-                       <QRCodeSVG value={peerId} size={160} bgColor="transparent" fgColor="#fff" />
+                    
+                    <div className="modern-qr-card">
+                       <span className="scan-corners top-left"></span>
+                       <span className="scan-corners top-right"></span>
+                       <span className="scan-corners bottom-left"></span>
+                       <span className="scan-corners bottom-right"></span>
+                       <div className="qr-glowing-wrapper" title="Scan with camera">
+                         <QRCodeSVG 
+                           value={`${window.location.origin}?receive=${peerId}`} 
+                           size={180} 
+                           bgColor="#ffffff" 
+                           fgColor="#000000" 
+                           level="Q"
+                         />
+                       </div>
                     </div>
                     <p className="waiting-text">Waiting for receiver to connect...</p>
                     <div className="timer-container">
@@ -288,6 +338,10 @@ export default function App() {
 
         </AnimatePresence>
       </main>
+      
+      <AnimatePresence>
+         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      </AnimatePresence>
     </div>
   );
 }

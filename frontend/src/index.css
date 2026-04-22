@@ -336,6 +336,47 @@ body::before {
   transition: all 0.3s;
   letter-spacing: 2px;
 }
+
+/* Modal CSS */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.divider span {
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
 .modern-input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
@@ -356,14 +397,44 @@ body::before {
   text-align: center;
 }
 
-.qr-container {
-  background: white;
-  padding: 1rem;
-  border-radius: 16px;
-  display: inline-block;
-  margin: 2rem 0;
-  box-shadow: 0 0 40px rgba(255,255,255,0.1);
-  border: 4px solid var(--primary);
+.modern-qr-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 30px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.5rem 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.scan-corners {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  border-color: var(--primary);
+  border-style: solid;
+  border-width: 0;
+}
+
+.scan-corners.top-left { top: 15px; left: 15px; border-top-width: 3px; border-left-width: 3px; border-top-left-radius: 8px; }
+.scan-corners.top-right { top: 15px; right: 15px; border-top-width: 3px; border-right-width: 3px; border-top-right-radius: 8px; }
+.scan-corners.bottom-left { bottom: 15px; left: 15px; border-bottom-width: 3px; border-left-width: 3px; border-bottom-left-radius: 8px; }
+.scan-corners.bottom-right { bottom: 15px; right: 15px; border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 8px; }
+
+.qr-glowing-wrapper {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 12px;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+  cursor: pointer;
+}
+.qr-glowing-wrapper:hover {
+  transform: scale(1.05) translateY(-5px);
+  box-shadow: 0 10px 40px rgba(59, 130, 246, 0.8);
 }
 
 .peer-id-box {

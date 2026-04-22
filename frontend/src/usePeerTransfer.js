@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Peer from 'peerjs';
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
@@ -47,6 +47,8 @@ export function usePeerTransfer() {
       connRef.current = conn;
       setConnection(conn);
       setupSenderConnection(conn);
+      // PERMANENTLY DESTROY OTP SO NO ONE ELSE CAN CONNECT
+      peer.disconnect();
     });
 
     peer.on('error', (err) => {
@@ -189,7 +191,7 @@ export function usePeerTransfer() {
     });
   };
 
-  const reset = () => {
+  const reset = useCallback(() => {
     if (connRef.current) connRef.current.close();
     if (peerRef.current) peerRef.current.destroy();
     setStatus('idle');
@@ -203,7 +205,7 @@ export function usePeerTransfer() {
     fileChunksRef.current = [];
     expectedSizeRef.current = 0;
     receivedSizeRef.current = 0;
-  };
+  }, []);
 
   // cleanup on unmount
   useEffect(() => {
