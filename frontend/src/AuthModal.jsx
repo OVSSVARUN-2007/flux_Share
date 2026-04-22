@@ -89,6 +89,9 @@ export default function AuthModal({ onClose }) {
                   }}
                   theme="filled_black"
                   shape="pill"
+                  text="signin_with"
+                  useOneTap={false}
+                  prompt="select_account"
                />
             </div>
             
