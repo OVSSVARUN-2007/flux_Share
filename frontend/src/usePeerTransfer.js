@@ -19,12 +19,37 @@ export function usePeerTransfer() {
 
   const peerRef = useRef(null);
   const connRef = useRef(null);
-  const fileRef = useRef(null);
   
-  // File receiving states
-  const fileChunksRef = useRef([]);
-  const expectedSizeRef = useRef(0);
-  const receivedSizeRef = useRef(0);
+  // Initialize Peer instance ONCE on mount
+  useEffect(() => {
+    if (!peerRef.current) {
+      console.log('Hook: Initializing Peer instance...');
+      const peer = new Peer(PEER_CONFIG);
+      peerRef.current = peer;
+
+      peer.on('open', (id) => {
+        console.log('Hook: Peer server connected. ID:', id);
+        setPeerId(id);
+      });
+
+      peer.on('error', (err) => {
+        console.error('Hook: Peer Error:', err);
+        if (err.type === 'peer-unavailable') {
+            setErrorMsg('Sender not found. Check if the code is correct.');
+        } else {
+            setErrorMsg('Connection error: ' + err.type);
+        }
+        setStatus('error');
+      });
+
+      peer.on('connection', (conn) => {
+        console.log('Hook: Incoming connection from', conn.peer);
+        connRef.current = conn;
+        setConnection(conn);
+        setupSenderConnection(conn);
+      });
+    }
+  }, []);
 
   // Speed calculation logic
   useEffect(() => {
@@ -81,32 +106,12 @@ export function usePeerTransfer() {
     
     fileRef.current = file;
     setFileMeta({ name: file.name, size: file.size, type: file.type });
-    setStatus('connecting');
+    setStatus('ready');
     setErrorMsg('');
-
-    // Let PeerJS generate a highly reliable, unique UUID
-    const peer = new Peer(PEER_CONFIG);
-    peerRef.current = peer;
-
-    peer.on('open', (id) => {
-      console.log('Sender: Server online. ID:', id);
-      setPeerId(id);
-      setStatus('ready');
-    });
-
-    peer.on('connection', (conn) => {
-      connRef.current = conn;
-      setConnection(conn);
-      setupSenderConnection(conn);
-      // NOTE: We don't disconnect immediately anymore. 
-      // We'll let the peer stay connected to the server until the transfer starts.
-    });
-
-    peer.on('error', (err) => {
-      console.error('Peer Error:', err);
-      setErrorMsg(err.type === 'peer-unavailable' ? 'Sender ID not found. Verify the ID is correct.' : (err.message || 'Connection error'));
-      setStatus('error');
-    });
+    
+    if (!peerId) {
+       setErrorMsg('Still connecting to server... Please wait a second.');
+    }
   };
 
   const setupSenderConnection = (conn) => {
@@ -198,46 +203,45 @@ export function usePeerTransfer() {
   };
 
   const initReceiver = (targetId) => {
-    if (!targetId) {
-      setErrorMsg('Please enter a valid ID');
+    if (!targetId || !peerRef.current) {
+      setErrorMsg('Internal error or invalid ID');
       return;
     }
 
     const finalId = targetId.trim();
-    console.log('Receiver: Connecting to', finalId);
+    console.log('Receiver: Attempting connection to', finalId);
 
     setStatus('connecting');
     setErrorMsg('');
-    const peer = new Peer(PEER_CONFIG);
-    peerRef.current = peer;
 
-    peer.on('open', (id) => {
-      console.log('Receiver: ID:', id);
-      const attemptConnect = (retries = 10) => {
-        const conn = peer.connect(finalId, { reliable: true });
-        connRef.current = conn;
-        setConnection(conn);
+    const attemptConnect = (retries = 15) => {
+      const conn = peerRef.current.connect(finalId, { reliable: true });
+      connRef.current = conn;
+      setConnection(conn);
 
-        const timeout = setTimeout(() => {
-          if (conn.open) return;
-          if (retries > 0) {
-            console.warn('Receiver: Connection taking long, retrying...', retries);
-            conn.close();
-            attemptConnect(retries - 1);
-          } else {
-            setErrorMsg('Could not find sender. Ensure PIN is correct.');
-            setStatus('error');
-          }
-        }, 3000);
+      const timeout = setTimeout(() => {
+        if (conn.open) return;
+        if (retries > 0) {
+          console.warn('Receiver: Retry...', retries);
+          conn.close();
+          attemptConnect(retries - 1);
+        } else {
+          setErrorMsg('Sender not found. Check if the code is correct.');
+          setStatus('error');
+        }
+      }, 2000);
 
-        conn.on('open', () => {
-          clearTimeout(timeout);
-          setupReceiverConnection(conn);
-        });
-      };
+      conn.on('open', () => {
+        clearTimeout(timeout);
+        setupReceiverConnection(conn);
+      });
+      
+      conn.on('error', (err) => {
+         console.warn('Receiver: Conn attempt failed', err);
+      });
+    };
 
-      attemptConnect();
-    });
+    attemptConnect();
   };
 
   const setupReceiverConnection = (conn) => {
