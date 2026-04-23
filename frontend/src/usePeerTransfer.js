@@ -57,6 +57,9 @@ export function usePeerTransfer() {
 
   const PEER_CONFIG = {
     debug: 3,
+    host: '0.peerjs.com',
+    port: 443,
+    secure: true,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
@@ -65,6 +68,7 @@ export function usePeerTransfer() {
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:stun.relay.metered.ca:80' },
+        { urls: 'stun:stun.nextcloud.com:443' },
       ],
       sdpSemantics: 'unified-plan'
     }
@@ -82,7 +86,7 @@ export function usePeerTransfer() {
     setStatus('connecting');
     setErrorMsg('');
 
-    const randomId = Math.random().toString(36).substr(2, 6).toUpperCase();
+    const randomId = Math.random().toString(36).substr(2, 6).toLowerCase();
     const peer = new Peer(randomId, PEER_CONFIG);
     peerRef.current = peer;
 
@@ -201,7 +205,7 @@ export function usePeerTransfer() {
       return;
     }
 
-    const finalId = targetId.trim().toUpperCase();
+    const finalId = targetId.trim().toLowerCase();
     console.log('Receiver: Connecting to', finalId);
 
     setStatus('connecting');
@@ -211,7 +215,7 @@ export function usePeerTransfer() {
 
     peer.on('open', (id) => {
       console.log('Receiver: ID:', id);
-      const attemptConnect = (retries = 3) => {
+      const attemptConnect = (retries = 10) => {
         const conn = peer.connect(finalId, { reliable: true });
         connRef.current = conn;
         setConnection(conn);
@@ -226,7 +230,7 @@ export function usePeerTransfer() {
             setErrorMsg('Could not find sender. Ensure PIN is correct.');
             setStatus('error');
           }
-        }, 5000);
+        }, 3000);
 
         conn.on('open', () => {
           clearTimeout(timeout);
