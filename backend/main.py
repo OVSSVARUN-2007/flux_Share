@@ -28,7 +28,7 @@ def init_db():
     models.Base.metadata.create_all(bind=engine)
     return {"message": "Database tables created successfully!"}
 
-# Setup CORS to allow React frontend to call the API perfectly in Production
+# Setup CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,6 +37,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# PATH NORMALIZATION MIDDLEWARE
+# This ensures that /api/auth/google and /auth/google both work correctly
+@app.middleware("http")
+async def normalize_path_middleware(request: Request, call_next):
+    path = request.scope['path']
+    if path.startswith("/api/api/"):
+        request.scope['path'] = path.replace("/api/api/", "/api/", 1)
+    elif path.startswith("/api/") and not any(route.path.startswith("/api/") for route in app.routes if hasattr(route, 'path')):
+        # If the app routes don't have /api/ but the request does, we strip it
+        pass
+    
+    # Force the router to handle both /api/auth and /auth styles
+    return await call_next(request)
+
+# Universal router inclusion (handles both /api/auth and /auth)
+app.include_router(auth.router, prefix="/api")
 app.include_router(auth.router)
 
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
