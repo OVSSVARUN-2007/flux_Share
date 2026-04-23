@@ -11,7 +11,17 @@ from routers import auth
 # Initialize the database (do NOT run on global scope in Serverless to prevent Vercel boot timeouts)
 # models.Base.metadata.create_all(bind=engine)
 
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
 app = FastAPI(title="Flux Share API")
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Server Error: {str(exc)}"}
+    )
 
 @app.get("/api/init-db")
 def init_db():
