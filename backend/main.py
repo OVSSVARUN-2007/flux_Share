@@ -8,8 +8,8 @@ from database import engine
 import models
 from routers import auth
 
-# Initialize the SQLite database (Disabled on Serverless to prevent Vercel boot timeouts)
-# models.Base.metadata.create_all(bind=engine)
+# Initialize the database
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Flux Share API")
 
