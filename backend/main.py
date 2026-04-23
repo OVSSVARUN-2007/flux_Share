@@ -8,10 +8,15 @@ from database import engine
 import models
 from routers import auth
 
-# Initialize the database
-models.Base.metadata.create_all(bind=engine)
+# Initialize the database (do NOT run on global scope in Serverless to prevent Vercel boot timeouts)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Flux Share API")
+
+@app.get("/api/init-db")
+def init_db():
+    models.Base.metadata.create_all(bind=engine)
+    return {"message": "Database tables created successfully!"}
 
 # Setup CORS to allow React frontend to call the API perfectly in Production
 app.add_middleware(
