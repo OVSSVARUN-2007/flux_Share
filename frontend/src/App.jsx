@@ -12,7 +12,7 @@ export default function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { user, loading, logout } = useAuth();
   const {
-    peerId, status, progress, errorMsg, fileMeta, downloadUrl,
+    peerId, status, progress, speed, errorMsg, fileMeta, downloadUrl,
     initSender, initReceiver, reset
   } = usePeerTransfer();
 
@@ -270,32 +270,67 @@ export default function App() {
                 )}
 
                 {status === 'transferring' && (
-                  <div className="transfer-progress">
-                    <div className="connection-viz">
-                      <div className="viz-node sender">
-                        <User size={32} />
-                        <span>Sender</span>
+                  <div className="transfer-page">
+                    <div className="transfer-header">
+                       <ShieldCheck className="pulse-icon" size={24} />
+                       <span>Secure P2P Channel Active</span>
+                    </div>
+
+                    <div className="connection-viz large">
+                      <div className="viz-node sender active">
+                        <div className="pulse-ring"></div>
+                        <User size={48} />
+                        <span>SENDER</span>
                       </div>
-                      <div className="viz-line">
-                        <div className="viz-pip"></div>
-                        <div className="viz-pip" style={{ animationDelay: '1s' }}></div>
-                        <div className="viz-pip" style={{ animationDelay: '2s' }}></div>
+                      <div className="viz-line transferring">
+                         <motion.div 
+                           className="viz-pip" 
+                           animate={{ x: [0, 200] }} 
+                           transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                         />
+                         <motion.div 
+                           className="viz-pip" 
+                           animate={{ x: [0, 200] }} 
+                           transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.2 }}
+                         />
+                         <motion.div 
+                           className="viz-pip" 
+                           animate={{ x: [0, 200] }} 
+                           transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.4 }}
+                         />
                       </div>
                       <div className="viz-node receiver active">
-                        <User size={32} />
-                        <span>Receiver</span>
+                        <div className="pulse-ring"></div>
+                        <User size={48} />
+                        <span>RECEIVER</span>
                       </div>
                     </div>
 
-                    <h3>Sending: {fileMeta?.name}</h3>
-                    <div className="progress-track">
-                      <motion.div
-                        className="progress-fill"
+                    <div className="transfer-info">
+                       <h2 className="file-name-scroll">{fileMeta?.name}</h2>
+                       <div className="stats-grid">
+                          <div className="stat">
+                             <span className="stat-label">Progress</span>
+                             <span className="stat-value">{progress}%</span>
+                          </div>
+                          <div className="stat">
+                             <span className="stat-label">Speed</span>
+                             <span className="stat-value glow-text-blue">{speed} MB/s</span>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="progress-track modern">
+                      <motion.div 
+                        className="progress-fill animated" 
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                       ></motion.div>
                     </div>
-                    <p className="progress-text">{progress}%</p>
+                    
+                    <p className="encryption-notice">
+                      <ShieldCheck size={14} /> End-to-end encrypted direct transfer
+                    </p>
                   </div>
                 )}
 
@@ -358,33 +393,67 @@ export default function App() {
                 )}
 
                 {status === 'transferring' && (
-                  <div className="transfer-progress">
-                    <div className="connection-viz">
+                  <div className="transfer-page">
+                    <div className="transfer-header">
+                       <ShieldCheck className="pulse-icon" size={24} />
+                       <span>Secure P2P Channel Active</span>
+                    </div>
+
+                    <div className="connection-viz large">
                       <div className="viz-node sender active">
-                        <User size={32} />
-                        <span>Sender</span>
+                        <div className="pulse-ring"></div>
+                        <User size={48} />
+                        <span>SENDER</span>
                       </div>
-                      <div className="viz-line reverse">
-                        <div className="viz-pip"></div>
-                        <div className="viz-pip" style={{ animationDelay: '1s' }}></div>
-                        <div className="viz-pip" style={{ animationDelay: '2s' }}></div>
+                      <div className="viz-line transferring reverse">
+                         <motion.div 
+                           className="viz-pip" 
+                           animate={{ x: [200, 0] }} 
+                           transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                         />
+                         <motion.div 
+                           className="viz-pip" 
+                           animate={{ x: [200, 0] }} 
+                           transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.2 }}
+                         />
+                         <motion.div 
+                           className="viz-pip" 
+                           animate={{ x: [200, 0] }} 
+                           transition={{ repeat: Infinity, duration: 0.8, ease: "linear", delay: 0.4 }}
+                         />
                       </div>
                       <div className="viz-node receiver active">
-                        <User size={32} />
-                        <span>Receiver</span>
+                        <div className="pulse-ring"></div>
+                        <User size={48} />
+                        <span>RECEIVER</span>
                       </div>
                     </div>
 
-                    <h3>Receiving: {fileMeta?.name}</h3>
-                    <p className="size-text">{(fileMeta?.size / (1024 * 1024)).toFixed(2)} MB</p>
-                    <div className="progress-track">
-                      <motion.div
-                        className="progress-fill"
+                    <div className="transfer-info">
+                       <h2 className="file-name-scroll">{fileMeta?.name}</h2>
+                       <div className="stats-grid">
+                          <div className="stat">
+                             <span className="stat-label">Received</span>
+                             <span className="stat-value">{progress}%</span>
+                          </div>
+                          <div className="stat">
+                             <span className="stat-label">Speed</span>
+                             <span className="stat-value glow-text-blue">{speed} MB/s</span>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="progress-track modern">
+                      <motion.div 
+                        className="progress-fill animated" 
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                       ></motion.div>
                     </div>
-                    <p className="progress-text">{progress}%</p>
+
+                     <p className="encryption-notice">
+                      <ShieldCheck size={14} /> End-to-end encrypted direct transfer
+                    </p>
                   </div>
                 )}
 

@@ -619,3 +619,134 @@ body::before {
   flex-direction: column;
   gap: 0.5rem;
 }
+
+/* Dedicated Transfer Page */
+.transfer-page {
+  text-align: center;
+  width: 100%;
+}
+
+.transfer-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 2rem;
+  color: var(--success);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.pulse-icon {
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.connection-viz.large {
+  margin: 3rem 0;
+  height: 120px;
+}
+
+.connection-viz.large .viz-node {
+  position: relative;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: var(--glow-primary);
+  border-radius: 50%;
+  z-index: -1;
+  animation: ripple 2s infinite;
+}
+
+@keyframes ripple {
+  from { transform: scale(1); opacity: 0.4; }
+  to { transform: scale(2.5); opacity: 0; }
+}
+
+.viz-line.transferring {
+  height: 4px;
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.stat {
+  background: rgba(0,0,0,0.3);
+  padding: 1.2rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.glow-text-blue {
+  color: #60a5fa;
+  text-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+}
+
+.file-name-scroll {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.progress-track.modern {
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.5);
+  margin-bottom: 1.5rem;
+}
+
+.progress-fill.animated {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #d946ef, #3b82f6);
+  background-size: 200% 100%;
+  animation: move-gradient 3s linear infinite;
+}
+
+@keyframes move-gradient {
+  from { background-position: 0% 0%; }
+  to { background-position: 200% 0%; }
+}
+
+.encryption-notice {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 2rem;
+}
