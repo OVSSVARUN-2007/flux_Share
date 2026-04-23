@@ -6,7 +6,7 @@ import os
 
 from database import engine
 import models
-from routers import auth
+from routers import auth, transfers
 
 # Initialize the database (do NOT run on global scope in Serverless to prevent Vercel boot timeouts)
 # models.Base.metadata.create_all(bind=engine)
@@ -54,6 +54,8 @@ async def normalize_path_middleware(request: Request, call_next):
 # Universal router inclusion (handles both /api/auth and /auth)
 app.include_router(auth.router, prefix="/api")
 app.include_router(auth.router)
+app.include_router(transfers.router, prefix="/api")
+app.include_router(transfers.router)
 
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 

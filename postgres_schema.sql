@@ -15,3 +15,15 @@ CREATE TABLE users (
 CREATE INDEX ix_users_id ON users (id);
 CREATE INDEX ix_users_email ON users (email);
 CREATE UNIQUE INDEX ix_users_google_id ON users (google_id);
+
+-- Create the transfer_logs table
+CREATE TABLE transfer_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    ip_address VARCHAR NOT NULL,
+    action_type VARCHAR NOT NULL, -- 'send' or 'receive'
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX ix_transfer_logs_id ON transfer_logs (id);
+CREATE INDEX ix_transfer_logs_ip_address ON transfer_logs (ip_address);

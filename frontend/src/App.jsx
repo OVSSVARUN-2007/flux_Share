@@ -28,12 +28,9 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const recId = params.get('receive');
     if (recId) {
-       if (user) {
-         setView('receive');
-         setReceiverId(recId);
-       } else {
-         setShowAuthModal(true);
-       }
+       setView('receive');
+       setReceiverId(recId);
+       logAction('receive');
     }
   }, [loading, user]);
 
@@ -83,6 +80,28 @@ export default function App() {
     if (e.dataTransfer.files.length > 0) {
       initSender(e.dataTransfer.files[0]);
     }
+  };
+
+  const logAction = async (type) => {
+    try {
+      const url = new URL('/api/transfers/log', window.location.origin);
+      url.searchParams.append('action_type', type);
+      if (user?.id) url.searchParams.append('user_id', user.id);
+      
+      await fetch(url, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to log action:', err);
+    }
+  };
+
+  const handleSend = () => {
+    setView('send');
+    logAction('send');
+  };
+
+  const handleReceive = () => {
+    setView('receive');
+    logAction('receive');
   };
 
   const startReceive = () => {
@@ -155,10 +174,10 @@ export default function App() {
               </div>
 
               <div className="buttons-group">
-                <button className="btn btn-primary" onClick={() => user ? setView('send') : setShowAuthModal(true)}>
+                <button className="btn btn-primary" onClick={handleSend}>
                   <ArrowUpRight size={20} /> Send File
                 </button>
-                <button className="btn btn-secondary" onClick={() => user ? setView('receive') : setShowAuthModal(true)}>
+                <button className="btn btn-secondary" onClick={handleReceive}>
                   <ArrowDownLeft size={20} /> Receive File
                 </button>
               </div>
