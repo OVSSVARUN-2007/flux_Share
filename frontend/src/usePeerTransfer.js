@@ -82,11 +82,12 @@ export function usePeerTransfer() {
     setStatus('connecting');
     setErrorMsg('');
 
-    const randomId = 'flux-' + Math.random().toString(36).substr(2, 6);
+    const randomId = Math.random().toString(36).substr(2, 6).toUpperCase();
     const peer = new Peer(randomId, PEER_CONFIG);
     peerRef.current = peer;
 
     peer.on('open', (id) => {
+      console.log('Sender: Server online. ID:', id);
       setPeerId(id);
       setStatus('ready');
     });
@@ -200,8 +201,8 @@ export function usePeerTransfer() {
       return;
     }
 
-    const finalId = targetId.startsWith('flux-') ? targetId : `flux-${targetId}`;
-    console.log('Receiver: Attempting to connect to', finalId);
+    const finalId = targetId.trim().toUpperCase();
+    console.log('Receiver: Connecting to', finalId);
 
     setStatus('connecting');
     setErrorMsg('');
@@ -209,32 +210,31 @@ export function usePeerTransfer() {
     peerRef.current = peer;
 
     peer.on('open', (id) => {
-      console.log('Receiver: Peer server connection open. ID:', id);
-      const conn = peer.connect(finalId, { reliable: true });
-      connRef.current = conn;
-      setConnection(conn);
+      console.log('Receiver: ID:', id);
+      const attemptConnect = (retries = 3) => {
+        const conn = peer.connect(finalId, { reliable: true });
+        connRef.current = conn;
+        setConnection(conn);
 
-      // Set a timeout for the connection
-      const connectionTimeout = setTimeout(() => {
-        if (status === 'connecting') {
-          console.error('Receiver: Connection timeout');
-          setErrorMsg('Connection timed out. Please ensure the sender is still waiting and your internet is stable.');
-          setStatus('error');
-          conn.close();
-        }
-      }, 15000);
+        const timeout = setTimeout(() => {
+          if (conn.open) return;
+          if (retries > 0) {
+            console.warn('Receiver: Connection taking long, retrying...', retries);
+            conn.close();
+            attemptConnect(retries - 1);
+          } else {
+            setErrorMsg('Could not find sender. Ensure PIN is correct.');
+            setStatus('error');
+          }
+        }, 5000);
 
-      conn.on('open', () => {
-        clearTimeout(connectionTimeout);
-        setupReceiverConnection(conn);
-      });
-      
-      conn.on('error', (err) => {
-        clearTimeout(connectionTimeout);
-        console.error('Receiver: Connection error', err);
-        setErrorMsg('Connection failed: ' + err.message);
-        setStatus('error');
-      });
+        conn.on('open', () => {
+          clearTimeout(timeout);
+          setupReceiverConnection(conn);
+        });
+      };
+
+      attemptConnect();
     });
   };
 

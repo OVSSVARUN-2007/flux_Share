@@ -202,6 +202,35 @@ body::before {
   pointer-events: none;
 }
 
+.id-card {
+  background: rgba(255,255,255,0.03);
+  padding: 1.5rem;
+  border-radius: 20px;
+  border: 1px dashed rgba(255,255,255,0.1);
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.id-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  font-weight: 700;
+}
+
+.large-pin {
+  font-size: 2.5rem !important;
+  color: #fff !important;
+  letter-spacing: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  background: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;

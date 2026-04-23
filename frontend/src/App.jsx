@@ -243,8 +243,11 @@ export default function App() {
 
                 {status === 'ready' && peerId && (
                   <div className="share-details">
-                    <p className="instruction">Scan the QR code or share your unique ID:</p>
-                    <div className="peer-id-box">{peerId}</div>
+                    <p className="instruction">Scan the QR code or enter the 6-digit PIN on the other device:</p>
+                    <div className="id-card">
+                       <span className="id-label">PIN CODE</span>
+                       <div className="peer-id-box large-pin">{peerId}</div>
+                    </div>
 
                     <div className="modern-qr-card">
                       <span className="scan-corners top-left"></span>
