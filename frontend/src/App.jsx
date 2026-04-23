@@ -243,10 +243,13 @@ export default function App() {
 
                 {status === 'ready' && peerId && (
                   <div className="share-details">
-                    <p className="instruction">Scan the QR code or enter the 6-digit PIN on the other device:</p>
-                    <div className="id-card">
-                       <span className="id-label">PIN CODE</span>
-                       <div className="peer-id-box large-pin">{peerId}</div>
+                    <p className="instruction">Scan the QR code or enter the ID on the other device:</p>
+                    <div className="id-card" onClick={() => {
+                        navigator.clipboard.writeText(peerId);
+                        alert('ID Copied to clipboard!');
+                      }} style={{ cursor: 'pointer' }} title="Click to copy">
+                       <span className="id-label">CLICK TO COPY ID</span>
+                       <div className="peer-id-box uuid-style">{peerId}</div>
                     </div>
 
                     <div className="modern-qr-card">

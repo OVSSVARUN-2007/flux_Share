@@ -57,18 +57,16 @@ export function usePeerTransfer() {
 
   const PEER_CONFIG = {
     debug: 3,
-    host: '0.peerjs.com',
-    port: 443,
-    secure: true,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
         { urls: 'stun:stun.relay.metered.ca:80' },
         { urls: 'stun:stun.nextcloud.com:443' },
+        { urls: 'stun:stun.ekiga.net' },
+        { urls: 'stun:stun.ideasip.com' },
+        { urls: 'stun:stun.schlund.de' },
       ],
       sdpSemantics: 'unified-plan'
     }
@@ -86,8 +84,8 @@ export function usePeerTransfer() {
     setStatus('connecting');
     setErrorMsg('');
 
-    const randomId = Math.random().toString(36).substr(2, 6).toLowerCase();
-    const peer = new Peer(randomId, PEER_CONFIG);
+    // Let PeerJS generate a highly reliable, unique UUID
+    const peer = new Peer(PEER_CONFIG);
     peerRef.current = peer;
 
     peer.on('open', (id) => {
@@ -205,7 +203,7 @@ export function usePeerTransfer() {
       return;
     }
 
-    const finalId = targetId.trim().toLowerCase();
+    const finalId = targetId.trim();
     console.log('Receiver: Connecting to', finalId);
 
     setStatus('connecting');

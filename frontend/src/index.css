@@ -220,15 +220,15 @@ body::before {
   font-weight: 700;
 }
 
-.large-pin {
-  font-size: 2.5rem !important;
+.uuid-style {
+  font-size: 1rem !important;
   color: #fff !important;
-  letter-spacing: 8px;
   font-family: 'JetBrains Mono', monospace;
-  background: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  text-shadow: 0 0 20px rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.2) !important;
+  padding: 10px !important;
+  border-radius: 10px !important;
+  word-break: break-all;
+  margin-top: 10px !important;
 }
 
 .card-header {
