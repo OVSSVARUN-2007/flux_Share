@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from database import get_db
-import models
+import models, schemas
 from typing import Optional
 
 router = APIRouter(prefix="/transfers", tags=["transfers"])
@@ -9,8 +9,7 @@ router = APIRouter(prefix="/transfers", tags=["transfers"])
 @router.post("/log")
 async def log_transfer(
     request: Request, 
-    action_type: str, 
-    user_id: Optional[int] = None, 
+    data: schemas.TransferLogCreate,
     db: Session = Depends(get_db)
 ):
     # Get IP address from request
@@ -23,9 +22,9 @@ async def log_transfer(
         ip_address = forwarded_for.split(",")[0].strip()
         
     log_entry = models.TransferLog(
-        user_id=user_id,
+        user_id=data.user_id,
         ip_address=ip_address,
-        action_type=action_type
+        action_type=data.action_type
     )
     db.add(log_entry)
     db.commit()
@@ -33,6 +32,6 @@ async def log_transfer(
     
     return {
         "status": "success",
-        "message": f"{action_type} action logged",
+        "message": f"{data.action_type} action logged",
         "ip": ip_address
     }

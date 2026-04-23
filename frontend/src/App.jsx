@@ -96,11 +96,14 @@ export default function App() {
 
   const logAction = async (type) => {
     try {
-      const url = new URL('/api/transfers/log', window.location.origin);
-      url.searchParams.append('action_type', type);
-      if (user?.id) url.searchParams.append('user_id', user.id);
-
-      await fetch(url, { method: 'POST' });
+      await fetch('/api/transfers/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action_type: type,
+          user_id: user?.id || null
+        })
+      });
     } catch (err) {
       console.error('Failed to log action:', err);
     }

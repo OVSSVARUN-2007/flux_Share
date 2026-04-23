@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Peer from 'peerjs';
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500 MB
-const CHUNK_SIZE = 256 * 1024; // 256 KB
+const CHUNK_SIZE = 64 * 1024; // 64 KB (optimal for WebRTC)
 
 export function usePeerTransfer() {
   const [peerId, setPeerId] = useState(null);
@@ -22,6 +22,17 @@ export function usePeerTransfer() {
   const expectedSizeRef = useRef(0);
   const receivedSizeRef = useRef(0);
 
+  const PEER_CONFIG = {
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+      ],
+      sdpSemantics: 'unified-plan'
+    }
+  };
+
   const initSender = (file) => {
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
@@ -35,7 +46,7 @@ export function usePeerTransfer() {
     setErrorMsg('');
 
     const randomId = 'flux-' + Math.random().toString(36).substr(2, 6);
-    const peer = new Peer(randomId);
+    const peer = new Peer(randomId, PEER_CONFIG);
     peerRef.current = peer;
 
     peer.on('open', (id) => {
@@ -47,12 +58,13 @@ export function usePeerTransfer() {
       connRef.current = conn;
       setConnection(conn);
       setupSenderConnection(conn);
-      // PERMANENTLY DESTROY OTP SO NO ONE ELSE CAN CONNECT
-      peer.disconnect();
+      // NOTE: We don't disconnect immediately anymore. 
+      // We'll let the peer stay connected to the server until the transfer starts.
     });
 
     peer.on('error', (err) => {
-      setErrorMsg(err.message || 'Peer connection error');
+      console.error('Peer Error:', err);
+      setErrorMsg(err.type === 'peer-unavailable' ? 'Sender ID not found. Verify the ID is correct.' : (err.message || 'Connection error'));
       setStatus('error');
     });
   };
@@ -82,47 +94,60 @@ export function usePeerTransfer() {
   };
 
   const sendFileChunks = (conn) => {
-    let offset = 0;
-    const reader = new FileReader();
     const file = fileRef.current;
-    if(!file) return;
+    if (!file) return;
+
+    let offset = 0;
     const totalSize = file.size;
+    const dataChannel = conn.dataChannel;
 
-    const readNextChunk = () => {
-      const slice = file.slice(offset, offset + CHUNK_SIZE);
-      reader.readAsArrayBuffer(slice);
-    };
+    // Use a highwater mark to keep the buffer full but not overflowing
+    const BUFFER_THRESHOLD = 1024 * 1024; // 1MB buffer
 
-    reader.onload = (e) => {
-      conn.send({
-        type: 'file-chunk',
-        chunk: e.target.result,
-        offset: offset
-      });
-      
-      offset += e.target.result.byteLength;
-      
-      const p = Math.round((offset / totalSize) * 100);
-      setProgress(p);
+    const sendNextChunk = () => {
+      while (offset < totalSize && dataChannel.bufferedAmount < BUFFER_THRESHOLD) {
+        const slice = file.slice(offset, offset + CHUNK_SIZE);
+        const reader = new FileReader();
 
-      if (offset < totalSize) {
-        if (conn.dataChannel && conn.dataChannel.bufferedAmount > 8 * 1024 * 1024) {
-          setTimeout(readNextChunk, 100);
-        } else if (conn.dataChannel && conn.dataChannel.bufferedAmount > 4 * 1024 * 1024) {
-          setTimeout(readNextChunk, 50);
-        } else {
-          readNextChunk();
-        }
-      } else {
-        conn.send({ type: 'file-end' });
-        setStatus('complete');
-        setTimeout(() => {
-          conn.close();
-        }, 2000);
+        reader.onload = (e) => {
+          if (dataChannel.readyState !== 'open') return;
+
+          try {
+            dataChannel.send(e.target.result);
+            offset += e.target.result.byteLength;
+            const p = Math.round((offset / totalSize) * 100);
+            setProgress(p);
+
+            if (offset >= totalSize) {
+              conn.send({ type: 'file-end' });
+              setStatus('complete');
+              setTimeout(() => conn.close(), 2000);
+            } else {
+              // Try to fill the buffer again
+              sendNextChunk();
+            }
+          } catch (err) {
+            console.error('Send error:', err);
+            setErrorMsg('Data channel error. Try a smaller file.');
+            setStatus('error');
+          }
+        };
+
+        reader.readAsArrayBuffer(slice);
+        return; // Break the while loop; reader.onload will call us back
       }
     };
 
-    readNextChunk();
+    if (dataChannel) {
+      dataChannel.bufferedAmountLowThreshold = BUFFER_THRESHOLD / 2;
+      dataChannel.onbufferedamountlow = () => {
+        sendNextChunk();
+      };
+      sendNextChunk();
+    } else {
+       // Fallback if dataChannel mapping hasn't happened yet
+       setTimeout(() => sendFileChunks(conn), 100);
+    }
   };
 
   const initReceiver = (targetId) => {
@@ -133,16 +158,17 @@ export function usePeerTransfer() {
 
     setStatus('connecting');
     setErrorMsg('');
-    const peer = new Peer();
+    const peer = new Peer(PEER_CONFIG);
     peerRef.current = peer;
 
     peer.on('open', () => {
-      const conn = peer.connect(targetId, { reliable: true });
+      const conn = peer.connect(targetId); // Default to best available transport
       connRef.current = conn;
       setConnection(conn);
       
       conn.on('error', (err) => {
-        setErrorMsg(err.message);
+        console.error('Connection Error:', err);
+        setErrorMsg('Connection lost or failed: ' + err.message);
         setStatus('error');
       });
 
@@ -150,7 +176,12 @@ export function usePeerTransfer() {
     });
 
     peer.on('error', (err) => {
-       setErrorMsg(err.message || 'Failed to connect');
+       console.error('Peer Error:', err);
+       let msg = 'Failed to connect';
+       if (err.type === 'peer-unavailable') msg = 'The sender ID does not exist. Check for typos.';
+       else if (err.type === 'network') msg = 'Network error. Please check your connection.';
+       
+       setErrorMsg(msg);
        setStatus('error');
     });
   };
@@ -161,17 +192,20 @@ export function usePeerTransfer() {
     });
 
     conn.on('data', (data) => {
+      if (data instanceof ArrayBuffer) {
+        // High-speed binary chunk received
+        fileChunksRef.current.push(data);
+        receivedSizeRef.current += data.byteLength;
+        const p = Math.round((receivedSizeRef.current / expectedSizeRef.current) * 100);
+        setProgress(p);
+        return;
+      }
+
       if (data.type === 'metadata') {
         expectedSizeRef.current = data.size;
         setFileMeta({ name: data.name, size: data.size, type: data.mime });
         setStatus('transferring');
         conn.send({ type: 'ready' });
-      } else if (data.type === 'file-chunk') {
-        fileChunksRef.current.push(data.chunk);
-        receivedSizeRef.current += data.chunk.byteLength;
-        
-        const p = Math.round((receivedSizeRef.current / expectedSizeRef.current) * 100);
-        setProgress(p);
       } else if (data.type === 'file-end') {
         setProgress(100);
         setStatus('complete');

@@ -24,3 +24,7 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class TransferLogCreate(BaseModel):
+    action_type: str
+    user_id: Optional[int] = None
