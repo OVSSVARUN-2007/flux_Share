@@ -34,6 +34,18 @@ export default function App() {
     }
   }, [loading, user]);
 
+  // Automatic download logic for receiver
+  useEffect(() => {
+    if (status === 'complete' && downloadUrl && view === 'receive') {
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileMeta?.name || 'flux-transfer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }, [status, downloadUrl, view, fileMeta]);
+
   useEffect(() => {
     let interval;
     if (view === 'send' && status === 'ready') {
@@ -256,6 +268,22 @@ export default function App() {
 
                 {status === 'transferring' && (
                   <div className="transfer-progress">
+                    <div className="connection-viz">
+                       <div className="viz-node sender">
+                         <User size={32} />
+                         <span>Sender</span>
+                       </div>
+                       <div className="viz-line">
+                         <div className="viz-pip"></div>
+                         <div className="viz-pip" style={{ animationDelay: '1s' }}></div>
+                         <div className="viz-pip" style={{ animationDelay: '2s' }}></div>
+                       </div>
+                       <div className="viz-node receiver active">
+                         <User size={32} />
+                         <span>Receiver</span>
+                       </div>
+                    </div>
+                    
                     <h3>Sending: {fileMeta?.name}</h3>
                     <div className="progress-track">
                       <motion.div 
@@ -300,7 +328,7 @@ export default function App() {
                      <input 
                        type="text" 
                        className="modern-input" 
-                       placeholder="e.g. flux-xyz123" 
+                       placeholder="" 
                        value={receiverId}
                        onChange={(e) => setReceiverId(e.target.value)}
                      />
@@ -322,12 +350,28 @@ export default function App() {
                 {status === 'ready' && (
                    <div className="status-box">
                      <div className="spinner"></div>
-                     <p>Connected! Awaiting file metadata...</p>
+                     <p>Receiver is connected to Sender! <br/> Awaiting file...</p>
                    </div>
                 )}
 
                 {status === 'transferring' && (
                   <div className="transfer-progress">
+                    <div className="connection-viz">
+                       <div className="viz-node sender active">
+                         <User size={32} />
+                         <span>Sender</span>
+                       </div>
+                       <div className="viz-line reverse">
+                         <div className="viz-pip"></div>
+                         <div className="viz-pip" style={{ animationDelay: '1s' }}></div>
+                         <div className="viz-pip" style={{ animationDelay: '2s' }}></div>
+                       </div>
+                       <div className="viz-node receiver active">
+                         <User size={32} />
+                         <span>Receiver</span>
+                       </div>
+                    </div>
+
                     <h3>Receiving: {fileMeta?.name}</h3>
                     <p className="size-text">{(fileMeta?.size / (1024*1024)).toFixed(2)} MB</p>
                     <div className="progress-track">
@@ -343,11 +387,18 @@ export default function App() {
 
                 {status === 'complete' && (
                    <div className="success-box">
-                     <h3>File Received! 🎉</h3>
-                     <a href={downloadUrl} download={fileMeta?.name} className="btn btn-success mt-4 w-full">
-                       Save File
-                     </a>
-                     <button className="btn btn-secondary mt-2 w-full" onClick={handleHome}>Receive Another</button>
+                     <div className="success-icon-wrapper">
+                        <ShieldCheck size={64} className="text-success" />
+                     </div>
+                     <h3>Transfer Complete! 🎉</h3>
+                     <p className="mt-2" style={{ color: '#94a3b8' }}>The file has been saved to your downloads.</p>
+                     
+                     <div className="complete-actions">
+                        <a href={downloadUrl} download={fileMeta?.name} className="btn btn-secondary mt-4 w-full">
+                          Download Again
+                        </a>
+                        <button className="btn btn-primary mt-2 w-full" onClick={handleHome}>Done</button>
+                     </div>
                    </div>
                 )}
 
