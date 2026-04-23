@@ -53,9 +53,7 @@ async def normalize_path_middleware(request: Request, call_next):
 
 # Universal router inclusion (handles both /api/auth and /auth)
 app.include_router(auth.router, prefix="/api")
-app.include_router(auth.router)
 app.include_router(transfers.router, prefix="/api")
-app.include_router(transfers.router)
 
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 
