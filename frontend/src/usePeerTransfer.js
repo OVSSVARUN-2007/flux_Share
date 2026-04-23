@@ -56,11 +56,15 @@ export function usePeerTransfer() {
   const offsetRef = useRef(0);
 
   const PEER_CONFIG = {
+    debug: 3,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
         { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:stun.relay.metered.ca:80' },
       ],
       sdpSemantics: 'unified-plan'
     }
@@ -206,19 +210,31 @@ export function usePeerTransfer() {
 
     peer.on('open', (id) => {
       console.log('Receiver: Peer server connection open. ID:', id);
-      const conn = peer.connect(finalId);
+      const conn = peer.connect(finalId, { reliable: true });
       connRef.current = conn;
       setConnection(conn);
-      setupReceiverConnection(conn);
-    });
 
-    peer.on('error', (err) => {
-       console.error('Receiver: Peer server error:', err);
-       let msg = 'Failed to connect';
-       if (err.type === 'peer-unavailable') msg = 'The sender ID does not exist. Check for typos.';
-       else if (err.type === 'network') msg = 'Network error. Please check your connection.';
-       setErrorMsg(msg);
-       setStatus('error');
+      // Set a timeout for the connection
+      const connectionTimeout = setTimeout(() => {
+        if (status === 'connecting') {
+          console.error('Receiver: Connection timeout');
+          setErrorMsg('Connection timed out. Please ensure the sender is still waiting and your internet is stable.');
+          setStatus('error');
+          conn.close();
+        }
+      }, 15000);
+
+      conn.on('open', () => {
+        clearTimeout(connectionTimeout);
+        setupReceiverConnection(conn);
+      });
+      
+      conn.on('error', (err) => {
+        clearTimeout(connectionTimeout);
+        console.error('Receiver: Connection error', err);
+        setErrorMsg('Connection failed: ' + err.message);
+        setStatus('error');
+      });
     });
   };
 
