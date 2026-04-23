@@ -99,21 +99,23 @@ export function usePeerTransfer() {
 
     let offset = 0;
     const totalSize = file.size;
-    const dataChannel = conn.dataChannel;
-
-    // Use a highwater mark to keep the buffer full but not overflowing
-    const BUFFER_THRESHOLD = 1024 * 1024; // 1MB buffer
 
     const sendNextChunk = () => {
-      while (offset < totalSize && dataChannel.bufferedAmount < BUFFER_THRESHOLD) {
+      // Use PeerJS's bufferedAmount via the internal dataChannel
+      // 1MB threshold is safe for most browsers
+      const BUFFER_THRESHOLD = 1024 * 1024; 
+
+      while (offset < totalSize && conn.dataChannel && conn.dataChannel.bufferedAmount < BUFFER_THRESHOLD) {
         const slice = file.slice(offset, offset + CHUNK_SIZE);
         const reader = new FileReader();
 
         reader.onload = (e) => {
-          if (dataChannel.readyState !== 'open') return;
+          if (!conn.open) return;
 
           try {
-            dataChannel.send(e.target.result);
+            // Use conn.send instead of dataChannel.send to maintain PeerJS protocol consistency
+            conn.send(e.target.result);
+            
             offset += e.target.result.byteLength;
             const p = Math.round((offset / totalSize) * 100);
             setProgress(p);
@@ -123,29 +125,27 @@ export function usePeerTransfer() {
               setStatus('complete');
               setTimeout(() => conn.close(), 2000);
             } else {
-              // Try to fill the buffer again
+              // Pulse the loop
               sendNextChunk();
             }
           } catch (err) {
             console.error('Send error:', err);
-            setErrorMsg('Data channel error. Try a smaller file.');
+            setErrorMsg('Data channel error. Transfer failed.');
             setStatus('error');
           }
         };
 
         reader.readAsArrayBuffer(slice);
-        return; // Break the while loop; reader.onload will call us back
+        return; // Wait for reader to finish
       }
     };
 
-    if (dataChannel) {
-      dataChannel.bufferedAmountLowThreshold = BUFFER_THRESHOLD / 2;
-      dataChannel.onbufferedamountlow = () => {
-        sendNextChunk();
-      };
+    if (conn.dataChannel) {
+      conn.dataChannel.bufferedAmountLowThreshold = 512 * 1024;
+      conn.dataChannel.onbufferedamountlow = () => sendNextChunk();
       sendNextChunk();
     } else {
-       // Fallback if dataChannel mapping hasn't happened yet
+       // If channel not yet mapped, wait a bit
        setTimeout(() => sendFileChunks(conn), 100);
     }
   };
@@ -156,13 +156,16 @@ export function usePeerTransfer() {
       return;
     }
 
+    // Automatically prepend 'flux-' if user only enters the 6-character PIN
+    const finalId = targetId.startsWith('flux-') ? targetId : `flux-${targetId}`;
+
     setStatus('connecting');
     setErrorMsg('');
     const peer = new Peer(PEER_CONFIG);
     peerRef.current = peer;
 
     peer.on('open', () => {
-      const conn = peer.connect(targetId); // Default to best available transport
+      const conn = peer.connect(finalId); // Use normalized ID
       connRef.current = conn;
       setConnection(conn);
       
